@@ -17,10 +17,10 @@ encNum = 8;
 s = NominalEncounterClass;
 
 % Setup the file to read the encounters from
-s.encounterFile = 'unitTestEncounters.mat';
+s.encounterFile = 'scriptedEncounters.mat';
 
 % Setup a metadata file associated with the encounters file
-s.metadataFile = 'metaData.mat';
+s.metadataFile = 'metaData_copy.mat';
 
 % Setup the encounter. The encounter number is usually used as the input to
 % the function to set the random seed used in the simulation
@@ -30,7 +30,7 @@ s.setupEncounter(encNum);
 s.runSimulink(encNum);  
 
 % Plot the encounter geometry
-s.plot
+s.plot_noisy
 
 % Read the well clear flag
 s.getSimulationOutput('WCMetrics');

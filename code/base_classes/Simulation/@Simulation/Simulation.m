@@ -42,6 +42,7 @@ classdef Simulation < BasicSimulation
             
             % Now pull out state trace if it exists
             obj.results(1).time = get( obj.simOut, 'tout' );
+            obj.results_noisy(1).time = get( obj.simOut, 'tout' );
                 
             % Update the results field
             aircraftStates = obj.getSimulationOutput( 'AircraftStatesOut' );
@@ -85,25 +86,90 @@ classdef Simulation < BasicSimulation
                 end
             end
 
-            err = [];
-            try
-                % Don't produce error if Simulink model lacks top-level
-                % outport AircraftEstimatesOut
-                aircraftEstimates = obj.getSimulationOutput( 'AircraftEstimatesOut' );
-            catch err
-            end
-            if( isempty( err ) )
-                assert( mod( size( aircraftEstimates, 2 ), AircraftEstimateBusReader.width ) == 0 );
-                for aidx = 1 : numAircraft,
-                    acEstimate= AircraftEstimateBusReader( aircraftEstimates(:,(aidx-1)*AircraftEstimateBusReader.width+(1:AircraftEstimateBusReader.width)) );
-                    varNames = fields( acEstimate );
-                    obj.estimates(aidx).time = obj.results(aidx).time;
-                    for k = 2 : numel(varNames),
-                        obj.estimates(aidx).(varNames{k}) = acEstimate.(varNames{k});
-                    end
-                end
-            end            
+%             err = [];
+%             try
+%                 % Don't produce error if Simulink model lacks top-level
+%                 % outport AircraftEstimatesOut
+%                 aircraftEstimates = obj.getSimulationOutput( 'AircraftEstimatesOut' );
+%             catch err
+%             end
+%             if( isempty( err ) )
+% %                 assert( mod( size( aircraftEstimates, 2 ), AircraftEstimateBusReader.width ) == 0 );
+%                 for aidx = 1 : numAircraft,
+%                     acEstimate= AircraftEstimateBusReader( aircraftEstimates(:,(aidx-1)*AircraftEstimateBusReader.width+(1:AircraftEstimateBusReader.width)) );
+%                     varNames = fields( acEstimate );
+%                     obj.estimates(aidx).time = obj.results(aidx).time;
+%                     for k = 2 : numel(varNames),
+%                         obj.estimates(aidx).(varNames{k}) = acEstimate.(varNames{k});
+%                     end
+%                 end
+%             end            
             
+            %%% Modification By Lydia for New Simulink Model %%%
+               % Update the results field
+            ownshipNoisyStates = obj.getSimulationOutput( 'NoisyOwnStatesOut' );
+            assert( mod( size( ownshipNoisyStates, 2 ), AircraftStateBusReader.width ) == 0 );
+            obj.results_noisy = repmat( obj.results_noisy(1), numAircraft, 1 );
+            
+            intruderNoisyStates = obj.getSimulationOutput( 'NoisyIntStatesOut' );                 
+            intruderState = AircraftRadarConvertedStates( intruderNoisyStates(:,(1:7)) );
+            ownshipNoisyStateRates = obj.getSimulationOutput( 'NoisyOwnStateRates' );
+            ownStateRate= AircraftStateRateBusReader( ownshipNoisyStateRates(:,((1:AircraftStateRateBusReader.width)) ));
+          
+            for aidx = 1 : numAircraft,
+                if aidx == 1
+                    ownNoisyState = AircraftStateBusReader( ownshipNoisyStates(:,(aidx-1)*AircraftStateBusReader.width+(1:AircraftStateBusReader.width)) );
+                    obj.results_noisy(aidx).north_ft = ownNoisyState.n_ft;
+                    obj.results_noisy(aidx).east_ft = ownNoisyState.e_ft;
+                    obj.results_noisy(aidx).up_ft = ownNoisyState.h_ft;
+                    obj.results_noisy(aidx).speed_ftps = ownNoisyState.v_ftps;
+                    obj.results_noisy(aidx).psi_rad = ownNoisyState.psi_rad;
+                    obj.results_noisy(aidx).theta_rad = ownNoisyState.theta_rad;
+                    obj.results_noisy(aidx).phi_rad = ownNoisyState.phi_rad;
+                    obj.results_noisy(aidx).vertical_speed_ftps = ownNoisyState.dh_ftps;
+                    obj.results_noisy(aidx).hdd_ftps2 = ownNoisyState.ddh_ftps2;
+                    obj.results_noisy(aidx).latitude_rad = ownNoisyState.latLonAltState.lat_rad;
+                    obj.results_noisy(aidx).longitude_rad = ownNoisyState.latLonAltState.lon_rad;
+                    obj.results_noisy(aidx).altitude_ft = ownNoisyState.latLonAltState.alt_ft;
+                    obj.results_noisy(aidx).dLatitude_radps = ownNoisyState.latLonAltState.dlat_radps;
+                    obj.results_noisy(aidx).dLongitude_radps = ownNoisyState.latLonAltState.dlon_radps;
+                    obj.results_noisy(aidx).dAltitude_ftps = ownNoisyState.latLonAltState.dalt_ftps;              
+
+                    %%%%%% Ownship State Rates %%%%%%
+                    varNames = fields( ownStateRate );
+                    for k = 1 : numel(varNames),
+                       obj.results_noisy(aidx).(varNames{k}) = acStateRate.(varNames{k});
+                    end
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                elseif aidx ==2
+              
+                    obj.results_noisy(aidx).north_ft = intruderState.n_ft;
+                    obj.results_noisy(aidx).east_ft = intruderState.e_ft;
+                    obj.results_noisy(aidx).up_ft = intruderState.h_ft;
+                    obj.results_noisy(aidx).speed_ftps = intruderState.v_ftps;
+                    obj.results_noisy(aidx).vertical_speed_ftps = intruderState.hdot_ftps;
+                    obj.results_noisy(aidx).Ndot_ftps = intruderState.Ndot_ftps;
+                    obj.results_noisy(aidx).Edot_ftps = intruderState.Edot_ftps;
+                    obj.results_noisy(aidx).hdot_ftps = intruderState.hdot_ftps;
+    
+
+%                     obj.results_noisy(aidx).psi_rad = intruderState.psi_rad;
+%                     obj.results_noisy(aidx).theta_rad = intruderState.theta_rad;
+%                     obj.results_noisy(aidx).phi_rad = intruderState.phi_rad;
+%                     obj.results_noisy(aidx).vertical_speed_ftps = intruderState.dh_ftps;
+%                     obj.results_noisy(aidx).hdd_ftps2 = ownNoisyState.ddh_ftps2;
+%                     obj.results_noisy(aidx).latitude_rad = ownNoisyState.latLonAltState.lat_rad;
+%                     obj.results_noisy(aidx).longitude_rad = ownNoisyState.latLonAltState.lon_rad;
+%                     obj.results_noisy(aidx).altitude_ft = ownNoisyState.latLonAltState.alt_ft;
+%                     obj.results_noisy(aidx).dLatitude_radps = ownNoisyState.latLonAltState.dlat_radps;
+%                     obj.results_noisy(aidx).dLongitude_radps = ownNoisyState.latLonAltState.dlon_radps;
+                    
+                end
+            end
+
+
+            
+            %%%  End of Modification Lines %%%
             % Pull out AvoidFlag (when anything was alerting) if present
             try
                 if ~obj.isNominal
@@ -305,10 +371,11 @@ classdef Simulation < BasicSimulation
         ylabel(hPlot(4), 'Airspeed (kt)');
         title(hPlot(4),'Airspeed vs. time');
         %% vertical acceleration
-
-        plot(hPlot(5), t, obj.results(1).hdd_ftps2/DEGAS.g,'k');
-        plot(hPlot(5), t, obj.results(2).hdd_ftps2/DEGAS.g,'b--');        
-        
+% 
+%         plot(hPlot(5), t, obj.results(1).hdd_ftps2/DEGAS.g,'k');
+%         plot(hPlot(5), t, obj.results(2).hdd_ftps2/DEGAS.g,'b--');        
+        plot(hPlot(5),t, obj.results(1).vertical_speed_ftps*(1/DEGAS.sec2min),'k');    % aircraft 1
+        plot(hPlot(5),t, obj.results(2).vertical_speed_ftps*(1/DEGAS.sec2min),'b--');    % aircraft 2
         if isNominal
             hOpenLoop(9) = plot(hPlot(5), t_openloop, obj.results_nominal(1).hdd_ftps2/DEGAS.g, 'Color', [.5 .5 .5], 'LineStyle', ':' );    % aircraft 1
             hOpenLoop(10) = plot(hPlot(5), t_openloop, obj.results_nominal(2).hdd_ftps2/DEGAS.g, 'Color', [.4 .8  1], 'LineStyle', ':' );    % aircraft 2
@@ -356,7 +423,146 @@ classdef Simulation < BasicSimulation
         title(hPlot(2), {['VMD = ' num2str(round(obj.outcome.vmd_ft)) ' ft, HMD = ' ...
             num2str(round(obj.outcome.hmd_ft)) ' ft, NMAC = ' num2str(obj.outcome.nmac,2)],'TCA focused altitude plot'} );
 
-        end % End plot function        
-    end
+        %%% Modificatoin %%%
+%         figure; axis;
+%         plot(t, obj.results_noisy(1).vertical_speed_ftps*(1/DEGAS.sec2min),'k');    % aircraft 1
+%         plot(t, obj.results(2).vertical_speed_ftps*(1/DEGAS.sec2min),'b--');    % aircraft 2
+% 
+%         xlabel('Time (s)');
+%         ylabel('Noisy Vertical Speed (ft/min)');
+% %         set('Ylim', [-4000 4000]);
+%         title('Vertical Speed vs. time');
+        %%%%%%%%%%%
     
+%         figure; axis;
+%         plot( t, obj.results_noisy(1).speed_ftps*DEGAS.ftps2kt,'k');
+%         xlabel('Time (s)');
+%         ylabel('Noisy Airspeed (kt)');
+%         title('Noisy Airspeed vs. time');
+
+          
+
+
+        %%%%% End of Modification %%%
+        
+        end % End plot function   
+
+     function plot_noisy(obj)      
+        %% set up figures to be drawn
+        hPlot = zeros(4,1);
+        if ( strcmp(obj.plottype, 'sepfigs') || strcmp( obj.plottype, 'sepfigs_visacq' ) )
+            figure; axis; hPlot(1) = gca;  hold on;    % vertical speed vs. time
+            figure; axis; hPlot(2) = gca;  hold on;    % altitude vs. time
+            figure; axis; hPlot(3) = gca;  hold on;    % E vs. N
+            figure; axis; hPlot(4) = gca;  hold on;    % airspeed vs. time
+          
+        else
+            figure
+            hold on
+            hPlot(1) = subplot(2,2,1);  hold on;    % vertical speed vs. time
+            hPlot(2) = subplot(2,2,2);  hold on;    % altitude vs. time
+            hPlot(3) = subplot(2,2,3);  hold on;    % E vs. N
+            hPlot(4) = subplot(2,2,4);  hold on;    % airspeed vs. time
+         
+        end
+
+        % CPA
+        t = obj.results_noisy(1).time;
+        if isempty(t)
+            t = obj.simOut.get('tout');
+        end
+        tcpa = obj.outcome.tca;
+        tcpa_i = find( t == tcpa );
+        
+
+        %% vertical speed (ft/min) vs. time
+
+
+        plot(hPlot(4), t, obj.results_noisy(1).vertical_speed_ftps*(1/DEGAS.sec2min),'r'); 
+        plot(hPlot(4), t, obj.results(1).vertical_speed_ftps*(1/DEGAS.sec2min),'k');% aircraft 1
+        plot(hPlot(4), t, obj.results(2).vertical_speed_ftps*(1/DEGAS.sec2min),'b--');    % aircraft 2
+
+        xlabel(hPlot(4), 'Time (s)');
+        ylabel(hPlot(4), 'Vertical Speed (ft/min)');
+        set(hPlot(4), 'Ylim', [-4000 4000]);
+        title(hPlot(4),'Vertical Speed vs. time');
+        
+        %% altitude (ft) vs. time
+        min_alt = min( [obj.results_noisy(1).up_ft; obj.results(2).up_ft] );
+        max_alt = max( [obj.results_noisy(1).up_ft; obj.results(2).up_ft] );
+        d_alt = max_alt - min_alt;
+        min_alt = min_alt - d_alt;
+        max_alt = max_alt + d_alt;
+
+        
+        plot(hPlot(3), t, obj.results_noisy(2).up_ft,'r'); 
+         plot(hPlot(3), t, obj.results(1).up_ft,'k'); % aircraft 1
+        plot(hPlot(3), t, obj.results(2).up_ft,'b--');      % aircraft 2                
+        
+        set(0, 'DefaultLegendAutoUpdate', 'off');
+       
+
+        xlabel(hPlot(3), 'Time (s)');
+        ylabel(hPlot(3), 'Altitude (ft)');
+        line([tcpa tcpa],[min_alt max_alt],'LineStyle','--','Color','g' ,...
+            'Parent', hPlot(3) );
+        text( tcpa, max_alt, ' {\color{green} TCA}', ...
+            'HorizontalAlignment','Left','VerticalAlignment','Top' , ...
+            'Parent', hPlot(3) );
+
+        vert_align = {'Top'; 'Bottom'};
+        if obj.results_noisy(1).up_ft(1) >= obj.results_noisy(1).up_ft(2)
+            v1 = vert_align{2};   v2 = vert_align{1};
+        else
+            v1 = vert_align{1};   v2 = vert_align{2};
+        end
+        text( t(1), obj.results_noisy(1).up_ft(1), '\rightarrow',  ...
+            'HorizontalAlignment','Left','VerticalAlignment',v1, ...
+            'Parent', hPlot(3) )
+
+        text( t(1), obj.results(2).up_ft(1), '{\color{blue} \rightarrow}',  ...
+            'HorizontalAlignment','Left','VerticalAlignment',v2, ...
+            'Parent', hPlot(3) )
+
+        title(hPlot(3),'Altitude vs. time');
+        %% Plan View (E vs. N)
+
+
+        plot(hPlot(1), obj.results_noisy(1).east_ft, obj.results_noisy(1).north_ft,'r');   % aircraft 1
+        plot(hPlot(1), obj.results(2).east_ft, obj.results(2).north_ft,'b--'); % aircraft 2
+        plot(hPlot(1), obj.results_noisy(1).east_ft(tcpa_i), obj.results_noisy(1).north_ft(tcpa_i),'ro');
+        plot(hPlot(1), obj.results(2).east_ft(tcpa_i), obj.results(2).north_ft(tcpa_i),'bo');
+        plot(hPlot(1), obj.results_noisy(1).east_ft(1),      obj.results_noisy(1).north_ft(1),     'rx');
+        plot(hPlot(1), obj.results(2).east_ft(1),      obj.results(2).north_ft(1),     'bx');
+
+        plot(hPlot(1), obj.results_noisy(1).east_ft, obj.results(1).north_ft,'k');   % aircraft 1   
+        plot(hPlot(1), obj.results_noisy(1).east_ft(tcpa_i), obj.results(1).north_ft(tcpa_i),'ko');
+        plot(hPlot(1), obj.results_noisy(1).east_ft(1),      obj.results(1).north_ft(1),     'kx');
+
+        axis(hPlot(1), 'equal');
+        xlabel(hPlot(1), 'East (ft)');
+        ylabel(hPlot(1), 'North (ft)');
+
+        rot1 = atan2( obj.results_noisy(1).north_ft(2) - obj.results_noisy(1).north_ft(1) , ...
+            obj.results_noisy(1).east_ft(2)  - obj.results_noisy(1).east_ft(1) );
+        text( obj.results_noisy(1).east_ft(1), obj.results_noisy(1).north_ft(1) , '\rightarrow' , ...
+            'Rotation', DEGAS.rad2deg*rot1, 'Parent', hPlot(1) );
+
+        rot2 = atan2( obj.results(2).north_ft(2) - obj.results(2).north_ft(1) , ...
+            obj.results(2).east_ft(2)  - obj.results(2).east_ft(1) );
+        text( obj.results(2).east_ft(1), obj.results(2).north_ft(1) , '{\color{blue} \rightarrow}' , ...
+            'Rotation', DEGAS.rad2deg*rot2, 'Parent', hPlot(1) );
+
+        title(hPlot(1),'Plan View (East vs. North)');
+        %% airspeed vs. time
+
+        plot(hPlot(2), t, obj.results_noisy(2).speed_ftps*DEGAS.ftps2kt,'r');
+        plot(hPlot(2), t, obj.results(1).speed_ftps*DEGAS.ftps2kt,'k');
+        plot(hPlot(2), t, obj.results(2).speed_ftps*DEGAS.ftps2kt,'b--');
+        xlabel(hPlot(2), 'Time (s)');
+        ylabel(hPlot(2), 'Airspeed (kt)');
+        title(hPlot(2),'Airspeed vs. time');
+
+    end
+    end
 end % End classdef

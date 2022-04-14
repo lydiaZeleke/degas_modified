@@ -19,8 +19,8 @@ classdef (Sealed = true) NominalEncounterClass < Simulation
         stopConditions @ StopConditions     
         
         % Sensor models
-        ac1OwnSense @ PerfectSurveillance % Sensor on ownship to discern own states
-        ac1IntSense @ PerfectSurveillance % Sensor on ownship to track intruder    
+        ac1OwnSense @ OwnshipError % Sensor on ownship to discern own states
+        ac1IntSense @ SC228_TrackedRadarModel % Sensor on ownship to track intruder    
 
         % Well clear metrics calculation
         wellClearParameters @ WellClearMetrics     
@@ -48,8 +48,10 @@ classdef (Sealed = true) NominalEncounterClass < Simulation
             this.stopConditions = StopConditions('', 'stop_range_ft', 5*DEGAS.nm2ft, 'stop_altitude_ft', 5000);                        
             
             % Sensor Models
-            this.ac1OwnSense = PerfectSurveillance('ac1OwnPerfSurv_');
-            this.ac1IntSense = PerfectSurveillance('ac1IntPerfSurv_');
+%             this.ac1OwnSense = PerfectSurveillance('ac1OwnPerfSurv_');
+%             this.ac1IntSense = PerfectSurveillance('ac1IntPerfSurv_');
+            this.ac1OwnSense = OwnshipError('uas_own_');
+            this.ac1IntSense = SC228_TrackedRadarModel('uas_rdr_trckd_');
             
             % Metrics properties
             this.wellClearParameters = WellClearMetrics('wcm_');                        
