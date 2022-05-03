@@ -636,7 +636,7 @@ classdef Simulation < BasicSimulation
 %         legend({'Ownship','Intruder'},'Location','best');
      end
      
-     function resultsCombined =  injected_noisy_data(obj,encNum,combined_results)
+     function resultsCombined =  injected_noisy_data(obj,encNum,combined_results, corrupted)
          
          obj.results_combined = repmat( obj.results(1), 2, 1 );
          variablesToRemove = {'AvoidFlag', 'hdd_ftps2', 'vdot_ftpss', 'dAltitude_ftps','psidot_radps', 'dLatitude_radps','dLongitude_radps','thetadot_radps','phidot_radps'};
@@ -644,44 +644,48 @@ classdef Simulation < BasicSimulation
          obj.results_combined(1).label = repmat("clean", 901, 1);
          obj.results_noisy(1).label = repmat("noisy", 901, 1);
         
-         %%% Combine noisy data with clean data for Ownship %%%
-      
-         if (encNum > 0) && (encNum <= 25)
-             fieldNames = {'latitude_rad' ; 'longitude_rad'};
-         elseif (encNum > 25) && (encNum <= 50)
-                 fieldNames = {'altitude_ft'; 'up_ft'};
-         elseif (encNum > 50) && (encNum <= 75)
-                 fieldNames = {'Ndot_ftps'; 'Edot_ftps'; 'speed_ftps'}; %should we add hdot_ftps because airspeed also depends on it
-         elseif (encNum > 75) && (encNum <= 100)
-                 fieldNames = {'theta_rad'; 'phi_rad'};
-         elseif (encNum > 100) && (encNum <= 111)
-                 fieldNames = {'psi_rad'};       
-         end
-         
-         len = length(fieldNames) + 1;
-         fieldNames(len) = {'label'};
+        if (corrupted)
         
-         rand_index1= randi([1,881]);
-         rand_index2= rand_index1;
-         while (rand_index2== rand_index1)
-             rand_index2 = randi([1,881]);
-         end
-         disp("rand_index1: ");
-         disp(rand_index1)
-        
-         disp("rand_index2: ");
-         disp(rand_index2)
-        %% We have two batches of sequential data points that are being injected noisy values %%
-        %% Each batch has 20 data points %%
-         for i = 1:len
-           %%% For Batch #1 ranging from rand_index1 to rand_index1+20    %%%
-           obj.results_combined(1).(fieldNames{i})(rand_index1:rand_index1+20)  = obj.results_noisy(1).(fieldNames{i})(rand_index1:rand_index1+20); 
+             %%% Combine noisy data with clean data for Ownship %%%
+                
           
-           %%% For Batch #2 ranging from rand_index2 to rand_index2+20    %%%
-           obj.results_combined(1).(fieldNames{i})(rand_index2:rand_index2+20)  = obj.results_noisy(1).(fieldNames{i})(rand_index2:rand_index2+20);
-           
-         end 
+             if (encNum > 0) && (encNum <= 25)
+                 fieldNames = {'latitude_rad' ; 'longitude_rad'};
+             elseif (encNum > 25) && (encNum <= 50)
+                     fieldNames = {'altitude_ft'; 'up_ft'};
+             elseif (encNum > 50) && (encNum <= 75)
+                     fieldNames = {'Ndot_ftps'; 'Edot_ftps'; 'speed_ftps'}; %should we add hdot_ftps because airspeed also depends on it
+             elseif (encNum > 75) && (encNum <= 100)
+                     fieldNames = {'theta_rad'; 'phi_rad'};
+             elseif (encNum > 100) && (encNum <= 111)
+                     fieldNames = {'psi_rad'};       
+             end
+             
+             len = length(fieldNames) + 1;
+             fieldNames(len) = {'label'};
+            
+             rand_index1= randi([1,881]);
+             rand_index2= rand_index1;
+             while (rand_index2== rand_index1)
+                 rand_index2 = randi([1,881]);
+             end
+             disp("rand_index1: ");
+             disp(rand_index1)
+            
+             disp("rand_index2: ");
+             disp(rand_index2)
+            %% We have two batches of sequential data points that are being injected noisy values %%
+            %% Each batch has 20 data points %%
+             for i = 1:len
+               %%% For Batch #1 ranging from rand_index1 to rand_index1+20    %%%
+               obj.results_combined(1).(fieldNames{i})(rand_index1:rand_index1+19)  = obj.results_noisy(1).(fieldNames{i})(rand_index1:rand_index1+19); 
+              
+               %%% For Batch #2 ranging from rand_index2 to rand_index2+20    %%%
+               obj.results_combined(1).(fieldNames{i})(rand_index2:rand_index2+19)  = obj.results_noisy(1).(fieldNames{i})(rand_index2:rand_index2+19);
+               
+             end 
          
+        end
          %% Create combined result for all available encounter scripts
   
          tempResults = obj.results_combined(1);
@@ -693,7 +697,8 @@ classdef Simulation < BasicSimulation
              tempResults.encNum = repmat(encNum, 901, 1);
              fields = fieldnames(tempResults);
              fieldLen = length(fields);
-
+             
+             %% Append this encounter script to the group of encounters %%
              for i = 1:fieldLen
                  combined_results.(string(fields(i))) = [combined_results.(string(fields(i))); tempResults(1).(string(fields(i)))];
              end
