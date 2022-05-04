@@ -70,6 +70,9 @@ classdef BasicSimulation < Block
             'altitude_ft',[],'speed_ftps',[],'psi_rad',[],'theta_rad',[],'phi_rad',[],'vertical_speed_ftps',[],...
             'hdd_ftps2',[],'AvoidFlag',[]), [ 2 1 ] );
 
+        results_radar = repmat( struct('time',[],'range_ft',[],'azimuth_rad',[],'elevation_rad', [],...
+            'range_dot',[],'azdot_radps',[],'eldot_radps',[],'AvoidFlag',[]), [ 1 1 ] );
+
         results_combined = repmat( struct('time',[],'north_ft',[],'east_ft',[],...
             'altitude_ft',[],'speed_ftps',[],'psi_rad',[],'theta_rad',[],'phi_rad',[],'vertical_speed_ftps',[]), [ 2 1 ] );
 

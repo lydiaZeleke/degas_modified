@@ -43,6 +43,7 @@ classdef Simulation < BasicSimulation
             % Now pull out state trace if it exists
             obj.results(1).time = get( obj.simOut, 'tout' );
             obj.results_noisy(1).time = get( obj.simOut, 'tout' );
+            obj.results_radar(1).time = get(obj.simOut, 'tout');
                 
             % Update the results field
             aircraftStates = obj.getSimulationOutput( 'AircraftStatesOut' );
@@ -116,6 +117,20 @@ classdef Simulation < BasicSimulation
             ownshipNoisyStateRates = obj.getSimulationOutput( 'NoisyOwnStateRates' );
             ownStateRate= AircraftStateRateBusReader( ownshipNoisyStateRates(:,((1:AircraftStateRateBusReader.width)) ));
           
+            %% Added for Visualizing Radar Parameters %%
+            radarStates = obj.getSimulationOutput( 'RadarNoisyStates' );                 
+            noisyRadarState = RadarStates( radarStates(:,(1:11)) );
+
+            
+            obj.results_radar.range_ft = noisyRadarState.range_ft;
+            obj.results_radar.azimuth_rad = noisyRadarState.az_rad;
+            obj.results_radar.elevation_rad = noisyRadarState.el_rad;
+            obj.results_radar.range_dot = noisyRadarState.dRange_dtps;
+            obj.results_radar.azdot_radps = noisyRadarState.azdot_radps;
+            obj.results_radar.eldot_radps = noisyRadarState.eldot_radps;
+
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
             for aidx = 1 : numAircraft,
                 if aidx == 1
                     ownNoisyState = AircraftStateBusReader( ownshipNoisyStates(:,(aidx-1)*AircraftStateBusReader.width+(1:AircraftStateBusReader.width)) );
@@ -446,6 +461,73 @@ classdef Simulation < BasicSimulation
         
         end % End plot function   
 
+     function plot_radar(obj)
+             
+        %% set up figures to be drawn
+        hPlot = zeros(6,1);
+        if ( strcmp(obj.plottype, 'sepfigs') || strcmp( obj.plottype, 'sepfigs_visacq' ) )
+            figure; axis; hPlot(1) = gca;  hold on;    % vertical speed vs. time
+            figure; axis; hPlot(2) = gca;  hold on;    % altitude vs. time
+            figure; axis; hPlot(3) = gca;  hold on;    % E vs. N
+            figure; axis; hPlot(4) = gca;  hold on;    % airspeed vs. time
+            figure; axis; hPlot(5) = gca;  hold on;    % airspeed vs. time
+          
+        else
+            figure
+            hold on
+            hPlot(1) = subplot(2,3,1);  hold on;    % vertical speed vs. time
+            hPlot(2) = subplot(2,3,2);  hold on;    % altitude vs. time
+            hPlot(3) = subplot(2,3,3);  hold on;    % E vs. N
+            hPlot(4) = subplot(2,3,4);  hold on;    % airspeed vs. time
+            hPlot(5) = subplot(2,3,5);  hold on; 
+            hPlot(6) = subplot(2,3,6);  hold on; % airspeed vs. time
+         
+        end
+
+        % CPA
+        t = obj.results_radar.time;
+        if isempty(t)
+            t = obj.simOut.get('tout');
+        end
+        tcpa = obj.outcome.tca;
+        tcpa_i = find( t == tcpa );
+        
+
+        %% Range (ft) vs. time
+        plot(hPlot(1), t, obj.results_radar.range_ft,'r'); 
+        xlabel(hPlot(1), 'Time (s)');
+        ylabel(hPlot(1), 'Range (ft)');
+        title(hPlot(1),'Range vs. time');
+
+        %% azimuth_rad (rad) vs. time
+        plot(hPlot(2), t, obj.results_radar.azimuth_rad,'r'); 
+        xlabel(hPlot(2), 'Time (s)');
+        ylabel(hPlot(2), 'Azimuth Angle (rad)');
+        title(hPlot(2),'Azimuth Angle vs. time');
+
+        %% elevation_rad (rad) vs. time
+        plot(hPlot(3), t, obj.results_radar.elevation_rad,'r'); 
+        xlabel(hPlot(3), 'Time (s)');
+        ylabel(hPlot(3), 'Elevation Angle (rad)');
+        title(hPlot(3),'Elevation Angle vs. time');
+
+        %% Range Rate (ft/sec) vs. time
+        plot(hPlot(4), t, obj.results_radar.range_dot,'r'); 
+        xlabel(hPlot(4), 'Time (s)');
+        ylabel(hPlot(4), 'Range Rate (ft)');
+        title(hPlot(4),'Rate of change of Range vs. time');
+
+        %% Range Rate (ft/sec) vs. time
+        plot(hPlot(5), t, obj.results_radar.azdot_radps,'r'); 
+        xlabel(hPlot(5), 'Time (s)');
+        ylabel(hPlot(5), 'Azimuth Angle Rate (rad/s)');
+        title(hPlot(5),'Rate of change of Azimuth Angle vs. time');
+        %% Range Rate (ft/sec) vs. time
+        plot(hPlot(6), t, obj.results_radar.eldot_radps,'r'); 
+        xlabel(hPlot(6), 'Time (s)');
+        ylabel(hPlot(6), 'Elevation Rate (rad/s)');
+        title(hPlot(6),'Elevation Rate vs. time');
+     end
      function plot_noisy(obj)      
         %% set up figures to be drawn
         hPlot = zeros(5,1);

@@ -14,15 +14,15 @@ resultsCombined = struct([]);
 % Input encounter number to simulate (Number 8 for setup scenario)
 
 %%% Pick three random samples from each 25-encounter group that remain uncorrupted%%
-%    first_group = randi([1, 5],1,3); 
-   first_group = [1, 5, 6];
+   first_group = randi([1, 5],1,3); 
+%    first_group = [1, 5, 6];
    second_group = randi([26, 50],1,3) ;
    third_group = randi([51, 75],1,3);
    fourth_group = randi([76, 111],1,3); 
    total_group = [first_group; second_group; third_group; fourth_group];
 
 %% generate for 100 encounters %%
-encNumArray = [1,2];
+encNumArray = 8;
 
 
 for i = 1: length(encNumArray)
@@ -46,9 +46,10 @@ for i = 1: length(encNumArray)
     % Plot the encounter geometry
 %     s.plot_noisy
     
-    corrupted = ~any(total_group(:) == encNum); 
-    
-    resultsCombined = s.injected_noisy_data(encNum, resultsCombined, corrupted);
+    s.plot_radar 
+%     corrupted = ~any(total_group(:) == encNum); 
+%     
+%     resultsCombined = s.injected_noisy_data(encNum, resultsCombined, corrupted);
 %     s.visualize_data(resultsCombined);
     % Read the well clear flag
     s.getSimulationOutput('WCMetrics');
@@ -56,5 +57,5 @@ for i = 1: length(encNumArray)
     
 end
     %% Export the generated data to a csv file
- generated_data = struct2table(resultsCombined);
- writetable(generated_data,'exported_encounter_data_111.csv')
+%  generated_data = struct2table(resultsCombined);
+%  writetable(generated_data,'exported_encounter_data_111.csv')
