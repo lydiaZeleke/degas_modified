@@ -43,11 +43,6 @@ classdef RadarStates
        isValid
        azdot_radps
        eldot_radps
-%         p_radps
-%         q_radps
-%         r_radps       
-%         dh_ftps
-        
       
 
     end
@@ -83,27 +78,7 @@ classdef RadarStates
         end 
         function value =  get.eldot_radps( this )
             value = this.matrix_data_(:,11);
-        end 
-%         function value =  get.latLonAltState( this )
-%             value = this.matrix_data_(:,5);
-%         end
-        
-%         function value = get.psi_rad( this )
-%             value = this.matrix_data_(:,6);
-%         end
-%         function value = get.theta_rad( this )
-%             value = this.matrix_data_(:,7);
-%         end
-%         function value = get.phi_rad( this )
-%             value = this.matrix_data_(:,8);
-%         end
-
-%          function value = get.dv_ftps2( this )
-%             value = this.matrix_data_(:,12);
-%         end
-%         function value = get.ddh_ftps2( this )
-%             value = this.matrix_data_(:,14);
-%         end        
+        end     
      
     end
     
